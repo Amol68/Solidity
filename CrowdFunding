@@ -1,0 +1,51 @@
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity >=0.7.0 <0.9.0;
+
+contract CrowdFunding{
+
+    mapping(address=>uint) public contributors; 
+    address public manager;
+    uint public minimumContribution;
+    uint public deadline;
+    uint public target;
+    uint public raisedAmount;
+    uint public noOfContributors; // if votes are above 50% , manager can get ethers 
+
+    constructor(uint _target , uint _deadline) // manager will set target and deadline 
+    {
+      target = _target;
+      deadline = block.timestamp+_deadline; //global variable that gives time in unix format 
+      minimumContribution = 100 wei;
+      manager = msg.sender;
+    }
+
+   // function through which ether will be sent
+    function sendEth() public payable {
+
+      require(block.timestamp < deadline , "Deadline Has Surpassed"); // check whether deadline has passed or not
+      require(msg.value >= minimumContribution , "Minimum Contribution is not met");
+  
+    // if block to check reoccurence of senders
+     if(contributors[msg.sender]==0){
+      noOfContributors++;
+      }
+
+      contributors[msg.sender]+=msg.value;
+      raisedAmount+=msg.value;
+    }
+
+    function getContractBalance() public view returns(uint)
+    {
+      return address(this).balance;
+    }
+
+    function refund() public{
+
+      require(block.timestamp>deadline && raisedAmount<target , "Deadline and Target not met");
+      require(contributors[msg.sender]>0); // person has contributed something or not
+      address payable user = payable(msg.sender);
+      user.transfer(contributors[msg.sender]);
+      contributors[msg.sender]=0;
+    }
+   
+}
